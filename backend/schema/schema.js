@@ -9,8 +9,10 @@ const {
   GraphQLEnumType,
 } = require('graphql');
 const Student = require('../model/student');
-const Teacher = require('../model/teacher');
+const Staff = require('../model/teacher');
 const Sponsor = require('../model/sponsor');
+const User = require('../model/user');
+const bcrypt = require('bcrypt');
 
 const SponsorType = new GraphQLObjectType({
   name: 'Sponsor',
@@ -42,8 +44,8 @@ const SponsorType = new GraphQLObjectType({
   }),
 });
 
-const TeacherType = new GraphQLObjectType({
-  name: 'Teacher',
+const UserType = new GraphQLObjectType({
+  name: 'User',
   fields: () => ({
     id: {
       type: GraphQLID,
@@ -57,17 +59,73 @@ const TeacherType = new GraphQLObjectType({
     surname: {
       type: GraphQLString,
     },
-    gender: {
+    stateOfOrigin: {
       type: GraphQLString,
     },
-    age: {
+    localGvt: {
+      type: GraphQLString,
+    },
+    phone: {
+      type: GraphQLString,
+    },
+    email: {
+      type: GraphQLString,
+    },
+    password: {
+      type: GraphQLString,
+    },
+  }),
+});
+const StaffType = new GraphQLObjectType({
+  name: 'Staff',
+  fields: () => ({
+    id: {
+      type: GraphQLID,
+    },
+    firstName: {
+      type: GraphQLString,
+    },
+    lastName: {
+      type: GraphQLString,
+    },
+    surname: {
       type: GraphQLString,
     },
     qualification: {
       type: GraphQLString,
     },
-    subjectHandled: {
-      type: GraphQLInt,
+    gender: {
+      type: GraphQLString,
+    },
+    maritalStatus: {
+      type: GraphQLString,
+    },
+    dob: {
+      type: GraphQLString,
+    },
+    yearAdmitted: {
+      type: GraphQLString,
+    },
+    role: {
+      type: GraphQLString,
+    },
+    stateOfOrigin: {
+      type: GraphQLString,
+    },
+    localGvt: {
+      type: GraphQLString,
+    },
+    homeTown: {
+      type: GraphQLString,
+    },
+    residence: {
+      type: GraphQLString,
+    },
+    phone: {
+      type: GraphQLString,
+    },
+    email: {
+      type: GraphQLString,
     },
   }),
 });
@@ -118,6 +176,154 @@ const StudentType = new GraphQLObjectType({
 const mutation = new GraphQLObjectType({
   name: 'Mutation',
   fields: {
+    // Add User
+    addUser: {
+      type: UserType,
+      args: {
+        firstName: {
+          type: GraphQLString,
+        },
+        lastName: {
+          type: GraphQLString,
+        },
+        surname: {
+          type: GraphQLString,
+        },
+        stateOfOrigin: {
+          type: GraphQLString,
+        },
+        localGvt: {
+          type: GraphQLString,
+        },
+        phone: {
+          type: GraphQLString,
+        },
+        email: {
+          type: GraphQLString,
+        },
+        password: {
+          type: GraphQLString,
+        },
+      },
+      resolve: async (parent, args) => {
+        const userExist = User.find({ email: args.email });
+        if (userExist) {
+          return 'User already Exist';
+        }
+        const salt = await bcrypt.genSalt(10);
+        const hashPassword = await bcrypt.hash(args.password, salt);
+        const user = User.create({
+          firstName: args.firstName,
+          lastName: args.lastName,
+          surname: args.surname,
+          stateOfOrigin: args.stateOfOrigin,
+          localGvt: args.localGvt,
+          phone: args.phone,
+          email: args.email,
+          password: hashPassword,
+        });
+        return user;
+      },
+    },
+
+    // Login User
+    loginUser: {
+      type: UserType,
+      args: {
+        email: {
+          type: GraphQLString,
+        },
+        password: {
+          type: GraphQLString,
+        },
+      },
+      resolve: async (parent, args) => {
+        const user = await User.findOne({ email: args.email });
+        if (!user) {
+          throw new Error('Invalid email or password');
+        }
+        const isPasswordValid = await bcrypt.compare(
+          args.password,
+          user.password
+        );
+        if (!isPasswordValid) {
+          throw new Error('Invalid email or password');
+        }
+        return user;
+      },
+    },
+    // Add Staff
+    addStaff: {
+      type: StaffType,
+      args: {
+        firstName: {
+          type: GraphQLString,
+        },
+        lastName: {
+          type: GraphQLString,
+        },
+        surname: {
+          type: GraphQLString,
+        },
+        qualification: {
+          type: GraphQLString,
+        },
+        gender: {
+          type: GraphQLString,
+        },
+        maritalStatus: {
+          type: GraphQLString,
+        },
+        dob: {
+          type: GraphQLString,
+        },
+        yearAdmitted: {
+          type: GraphQLString,
+        },
+        role: {
+          type: GraphQLString,
+        },
+        stateOfOrigin: {
+          type: GraphQLString,
+        },
+        localGvt: {
+          type: GraphQLString,
+        },
+        homeTown: {
+          type: GraphQLString,
+        },
+        residence: {
+          type: GraphQLString,
+        },
+        phone: {
+          type: GraphQLString,
+        },
+        email: {
+          type: GraphQLString,
+        },
+      },
+      resolve(parent, args) {
+        const teacher = Staff.create({
+          firstName: args.firstName,
+          lastName: args.lastName,
+          surname: args.surname,
+          qualification: args.qualification,
+          gender: args.gender,
+          maritalStatus: args.maritalStatus,
+          dob: args.dob,
+          yearAdmitted: args.yearAdmitted,
+          role: args.role,
+          stateOfOrigin: args.stateOfOrigin,
+          localGvt: args.localGvt,
+          homeTown: args.homeTown,
+          residence: args.residence,
+          phone: args.phone,
+          email: args.email,
+        });
+
+        return teacher;
+      },
+    },
     // Add Students
     addStudent: {
       type: StudentType,
@@ -411,7 +617,7 @@ const mutation = new GraphQLObjectType({
     updateSponsor: {
       type: SponsorType,
       args: {
-        id: {type: GraphQLID},
+        id: { type: GraphQLID },
         name: { type: GraphQLString },
         phoneNumber: { type: GraphQLString },
         occupation: { type: GraphQLString },
@@ -428,8 +634,8 @@ const mutation = new GraphQLObjectType({
           address: args.address,
           studentIds: args.studentIds,
         });
-        return updateSponsor
-      }
+        return updateSponsor;
+      },
     },
   },
 });
@@ -481,28 +687,28 @@ const RootQuery = new GraphQLObjectType({
 
     // Get all Teachers
     Teachers: {
-      type: new GraphQLList(TeacherType),
+      type: new GraphQLList(StaffType),
       args: {
         id: {
           type: GraphQLID,
         },
       },
       resolve(parent, args) {
-        const TeacherList = Teacher.find();
+        const TeacherList = Staff.find();
         return TeacherList;
       },
     },
 
-    // Get a Teacher
-    Teacher: {
-      type: TeacherType,
+    // Get a Staff
+    Staff: {
+      type: StaffType,
       args: {
         id: {
           type: GraphQLID,
         },
       },
       resolve(parent, args) {
-        const teacher = Teacher.findById(args.id);
+        const teacher = Staff.findById(args.id);
         return teacher;
       },
     },

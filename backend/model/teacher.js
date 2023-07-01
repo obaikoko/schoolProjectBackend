@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const TeacherSchema = mongoose.Schema({
+const StaffSchema = mongoose.Schema({
   firstName: {
     type: String,
   },
@@ -10,12 +10,44 @@ const TeacherSchema = mongoose.Schema({
   surname: {
     type: String,
   },
-  class: {
+  qualification: {
     type: String,
   },
-  age: {
+  gender: {
     type: String,
   },
+  maritalStaus: {
+    type: String,
+  },
+  dob: {
+    type: String,
+  },
+  yearAdmitted: {
+    type: String,
+  },
+  role: {
+    type: String,
+  },
+  stateOfOrigin: {
+    type: String,
+  },
+  localGvt: {
+    type: String,
+  },
+  homeTown: {
+    type: String,
+  },
+  residence: {
+    type: String,
+  },
+  phone: {
+    type: String,
+  },
+  email: {
+    type: String,
+  },
+},{
+  timestamps: true
 });
 
-module.exports = mongoose.model('Teacher', TeacherSchema);
+module.exports = mongoose.model('Staff', StaffSchema);

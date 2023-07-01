@@ -32,6 +32,9 @@ const StudentSchema = mongoose.Schema(
     localGvt: {
       type: String,
     },
+    homeTown: {
+      type: String,
+    },
 
     image: {
       url: {
