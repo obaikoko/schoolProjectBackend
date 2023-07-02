@@ -2,14 +2,13 @@ const {
   GraphQLObjectType,
   GraphQLID,
   GraphQLString,
-  GraphQLInt,
   GraphQLSchema,
   GraphQLNonNull,
   GraphQLList,
   GraphQLEnumType,
 } = require('graphql');
 const Student = require('../model/student');
-const Staff = require('../model/teacher');
+const Staff = require('../model/staff');
 const Sponsor = require('../model/sponsor');
 const User = require('../model/user');
 const bcrypt = require('bcrypt');
@@ -148,11 +147,11 @@ const StudentType = new GraphQLObjectType({
     gender: {
       type: GraphQLString,
     },
-    class: {
+    level: {
       type: GraphQLString,
     },
-    age: {
-      type: GraphQLInt,
+    dob: {
+      type: GraphQLString,
     },
     yearAdmitted: {
       type: GraphQLString,
@@ -161,6 +160,9 @@ const StudentType = new GraphQLObjectType({
       type: GraphQLString,
     },
     localGvt: {
+      type: GraphQLString,
+    },
+    homeTown: {
       type: GraphQLString,
     },
     sponsor: {
@@ -231,16 +233,16 @@ const mutation = new GraphQLObjectType({
       type: UserType,
       args: {
         email: {
-          type: GraphQLString,
+          type: GraphQLNonNull(GraphQLString),
         },
         password: {
-          type: GraphQLString,
+          type: GraphQLNonNull(GraphQLString),
         },
       },
       resolve: async (parent, args) => {
         const user = await User.findOne({ email: args.email });
         if (!user) {
-          throw new Error('Invalid email or password');
+          throw new Error('User not found!');
         }
         const isPasswordValid = await bcrypt.compare(
           args.password,
@@ -269,7 +271,13 @@ const mutation = new GraphQLObjectType({
           type: GraphQLString,
         },
         gender: {
-          type: GraphQLString,
+          type: new GraphQLEnumType({
+            name: 'StaffGenderType',
+            values: {
+              Male: { value: 'Male' },
+              Female: { value: 'Female' },
+            },
+          }),
         },
         maritalStatus: {
           type: GraphQLString,
@@ -337,56 +345,19 @@ const mutation = new GraphQLObjectType({
         surname: {
           type: GraphQLString,
         },
-        age: {
-          type: GraphQLInt,
+        dob: {
+          type: GraphQLString,
         },
         yearAdmitted: {
           type: GraphQLString,
         },
         stateOfOrigin: {
-          type: new GraphQLEnumType({
-            name: 'StateType',
-            values: {
-              Abia: { value: 'Abia' },
-              Adamawa: { value: 'Adamawa' },
-              AkwaIbom: { value: 'Akwa Ibom' },
-              Anambra: { value: 'Anambra' },
-              Bauchi: { value: 'Bauchi' },
-              Bayelsa: { value: 'Bayelsa' },
-              Benue: { value: 'Benue' },
-              Borno: { value: 'Borno' },
-              CrossRiver: { value: 'Cross River' },
-              Delta: { value: 'Delta' },
-              Ebonyi: { value: 'Ebonyi' },
-              Edo: { value: 'Edo' },
-              Ekiti: { value: 'Ekiti' },
-              Enugu: { value: 'Enugu' },
-              Gombe: { value: 'Gombe' },
-              Imo: { value: 'Imo' },
-              Jigawa: { value: 'Jigawa' },
-              Kaduna: { value: 'Kaduna' },
-              Kano: { value: 'Kano' },
-              Katsina: { value: 'Katsina' },
-              Kebbi: { value: 'Kebbi' },
-              Kogi: { value: 'Kogi' },
-              Kwara: { value: 'Kwara' },
-              Lagos: { value: 'Lagos' },
-              Nasarawa: { value: 'Nasarawa' },
-              Niger: { value: 'Niger' },
-              Ogun: { value: 'Ogun' },
-              Ondo: { value: 'Ondo' },
-              Osun: { value: 'Osun' },
-              Oyo: { value: 'Oyo' },
-              Plateau: { value: 'Plateau' },
-              Rivers: { value: 'Rivers' },
-              Sokoto: { value: 'Sokoto' },
-              Taraba: { value: 'Taraba' },
-              Yobe: { value: 'Yobe' },
-              Zamfara: { value: 'Zamfara' },
-            },
-          }),
+          type: GraphQLString,
         },
         localGvt: {
+          type: GraphQLString,
+        },
+        homeTown: {
           type: GraphQLString,
         },
         gender: {
@@ -398,7 +369,7 @@ const mutation = new GraphQLObjectType({
             },
           }),
         },
-        class: {
+        level: {
           type: new GraphQLEnumType({
             name: 'ClassStatus',
             values: {
@@ -421,11 +392,13 @@ const mutation = new GraphQLObjectType({
           firstName: args.firstName,
           lastName: args.lastName,
           surname: args.surname,
-          age: args.age,
-          class: args.class,
+          dob: args.dob,
+          level: args.level,
           gender: args.gender,
           yearAdmitted: args.yearAdmitted,
           stateOfOrigin: args.stateOfOrigin,
+          localGvt: args.localGvt,
+          homeTown: args.homeTown,
           sponsorId: args.sponsorId,
         });
 
@@ -437,9 +410,6 @@ const mutation = new GraphQLObjectType({
     updateStudent: {
       type: StudentType,
       args: {
-        id: {
-          type: new GraphQLNonNull(GraphQLID),
-        },
         firstName: {
           type: GraphQLString,
         },
@@ -449,10 +419,19 @@ const mutation = new GraphQLObjectType({
         surname: {
           type: GraphQLString,
         },
-        age: {
-          type: GraphQLInt,
+        dob: {
+          type: GraphQLString,
         },
         yearAdmitted: {
+          type: GraphQLString,
+        },
+        stateOfOrigin: {
+          type: GraphQLString,
+        },
+        localGvt: {
+          type: GraphQLString,
+        },
+        homeTown: {
           type: GraphQLString,
         },
         gender: {
@@ -464,9 +443,9 @@ const mutation = new GraphQLObjectType({
             },
           }),
         },
-        class: {
+        level: {
           type: new GraphQLEnumType({
-            name: 'ClassStatusUpadte',
+            name: 'ClassStatusUpdate',
             values: {
               Jss1: { value: 'Jss1' },
               Jss2: { value: 'Jss2' },
@@ -476,55 +455,10 @@ const mutation = new GraphQLObjectType({
               Sss3: { value: 'Sss3' },
             },
           }),
-        },
-        stateOfOrigin: {
-          type: new GraphQLEnumType({
-            name: 'StateTypeUpdate',
-            values: {
-              Abia: { value: 'Abia' },
-              Adamawa: { value: 'Adamawa' },
-              AkwaIbom: { value: 'Akwa Ibom' },
-              Anambra: { value: 'Anambra' },
-              Bauchi: { value: 'Bauchi' },
-              Bayelsa: { value: 'Bayelsa' },
-              Benue: { value: 'Benue' },
-              Borno: { value: 'Borno' },
-              CrossRiver: { value: 'Cross River' },
-              Delta: { value: 'Delta' },
-              Ebonyi: { value: 'Ebonyi' },
-              Edo: { value: 'Edo' },
-              Ekiti: { value: 'Ekiti' },
-              Enugu: { value: 'Enugu' },
-              Gombe: { value: 'Gombe' },
-              Imo: { value: 'Imo' },
-              Jigawa: { value: 'Jigawa' },
-              Kaduna: { value: 'Kaduna' },
-              Kano: { value: 'Kano' },
-              Katsina: { value: 'Katsina' },
-              Kebbi: { value: 'Kebbi' },
-              Kogi: { value: 'Kogi' },
-              Kwara: { value: 'Kwara' },
-              Lagos: { value: 'Lagos' },
-              Nasarawa: { value: 'Nasarawa' },
-              Niger: { value: 'Niger' },
-              Ogun: { value: 'Ogun' },
-              Ondo: { value: 'Ondo' },
-              Osun: { value: 'Osun' },
-              Oyo: { value: 'Oyo' },
-              Plateau: { value: 'Plateau' },
-              Rivers: { value: 'Rivers' },
-              Sokoto: { value: 'Sokoto' },
-              Taraba: { value: 'Taraba' },
-              Yobe: { value: 'Yobe' },
-              Zamfara: { value: 'Zamfara' },
-            },
-          }),
-        },
-        localGvt: {
-          type: GraphQLString,
+          defaultValue: 'Jss1',
         },
         sponsorId: {
-          type: GraphQLID,
+          type: new GraphQLNonNull(GraphQLID),
         },
       },
       resolve(parent, args) {
@@ -534,12 +468,13 @@ const mutation = new GraphQLObjectType({
             firstName: args.firstName,
             lastName: args.lastName,
             surname: args.surname,
-            age: args.age,
-            class: args.class,
+            dob: args.dob,
+            level: args.level,
             gender: args.gender,
             yearAdmitted: args.yearAdmitted,
             stateOfOrigin: args.stateOfOrigin,
             localGvt: args.localGvt,
+            homeTown: args.homeTown,
             sponsorId: args.sponsorId,
           },
           {
@@ -555,7 +490,7 @@ const mutation = new GraphQLObjectType({
     deleteClassStudent: {
       type: StudentType,
       args: {
-        class: {
+        level: {
           type: new GraphQLEnumType({
             name: 'ClassStatusDelete',
             values: {
@@ -570,7 +505,7 @@ const mutation = new GraphQLObjectType({
         },
       },
       resolve(parent, args) {
-        const deleteStudents = Student.deleteMany({ class: args.class });
+        const deleteStudents = Student.deleteMany({ level: args.level });
         return deleteStudents.then((result) => result.deletedCount);
       },
     },
@@ -645,7 +580,7 @@ const RootQuery = new GraphQLObjectType({
   name: 'RootQueryType',
   fields: {
     // Get all Students
-    Students: {
+    students: {
       type: new GraphQLList(StudentType),
       args: {
         id: {
@@ -672,7 +607,7 @@ const RootQuery = new GraphQLObjectType({
       },
     },
 
-    Sponsor: {
+    Sponsors: {
       type: new GraphQLList(SponsorType),
       args: {
         id: {
@@ -680,13 +615,13 @@ const RootQuery = new GraphQLObjectType({
         },
       },
       resolve(parent, args) {
-        const sponsor = Sponsor.find();
-        return sponsor;
+        const sponsors = Sponsor.find();
+        return sponsors;
       },
     },
 
     // Get all Teachers
-    Teachers: {
+    staff: {
       type: new GraphQLList(StaffType),
       args: {
         id: {
@@ -694,22 +629,49 @@ const RootQuery = new GraphQLObjectType({
         },
       },
       resolve(parent, args) {
-        const TeacherList = Staff.find();
-        return TeacherList;
+        const staffList = Staff.find();
+        return staffList;
       },
     },
 
     // Get a Staff
-    Staff: {
+    staffDetail: {
       type: StaffType,
+      args: {
+        id: {
+          type: new GraphQLNonNull(GraphQLID),
+        },
+      },
+      resolve(parent, args) {
+        const staff = Staff.findById(args.id);
+        return staff;
+      },
+    },
+
+    // Get All Users
+    users: {
+      type: GraphQLList(UserType),
       args: {
         id: {
           type: GraphQLID,
         },
       },
       resolve(parent, args) {
-        const teacher = Staff.findById(args.id);
-        return teacher;
+        const users = User.find();
+        return users;
+      },
+    },
+    // Get Specific User
+    user: {
+      type: UserType,
+      args: {
+        id: {
+          type: new GraphQLNonNull(GraphQLID),
+        },
+      },
+      resolve(parent, args) {
+        const user = User.findOne(args.id);
+        return user;
       },
     },
   },

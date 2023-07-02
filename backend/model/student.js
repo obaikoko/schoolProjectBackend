@@ -11,10 +11,10 @@ const StudentSchema = mongoose.Schema(
     surname: {
       type: String,
     },
-    age: {
+    dob: {
       type: String,
     },
-    class: {
+    level: {
       type: String,
       enum: ['Jss1', 'Jss2', 'Jss3', 'Sss1', 'Sss2', 'Sss3'],
     },
