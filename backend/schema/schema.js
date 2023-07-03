@@ -458,7 +458,7 @@ const mutation = new GraphQLObjectType({
           defaultValue: 'Jss1',
         },
         sponsorId: {
-          type: new GraphQLNonNull(GraphQLID),
+          type: GraphQLID,
         },
       },
       resolve(parent, args) {
