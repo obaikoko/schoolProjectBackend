@@ -410,6 +410,9 @@ const mutation = new GraphQLObjectType({
     updateStudent: {
       type: StudentType,
       args: {
+        id: {
+          type: new GraphQLNonNull(GraphQLID)
+        },
         firstName: {
           type: GraphQLString,
         },
