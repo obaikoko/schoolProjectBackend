@@ -332,6 +332,109 @@ const mutation = new GraphQLObjectType({
         return teacher;
       },
     },
+
+    // Update Staff
+    updateStaff: {
+      type: StaffType,
+      args: {
+        id: {
+          type: GraphQLID,
+        },
+        firstName: {
+          type: GraphQLString,
+        },
+        lastName: {
+          type: GraphQLString,
+        },
+        surname: {
+          type: GraphQLString,
+        },
+        qualification: {
+          type: GraphQLString,
+        },
+        gender: {
+          type: new GraphQLEnumType({
+            name: 'StaffGenderTypeUpdate',
+            values: {
+              Male: { value: 'Male' },
+              Female: { value: 'Female' },
+            },
+          }),
+        },
+        maritalStatus: {
+          type: GraphQLString,
+        },
+        dob: {
+          type: GraphQLString,
+        },
+        yearAdmitted: {
+          type: GraphQLString,
+        },
+        role: {
+          type: GraphQLString,
+        },
+        stateOfOrigin: {
+          type: GraphQLString,
+        },
+        localGvt: {
+          type: GraphQLString,
+        },
+        homeTown: {
+          type: GraphQLString,
+        },
+        residence: {
+          type: GraphQLString,
+        },
+        phone: {
+          type: GraphQLString,
+        },
+        email: {
+          type: GraphQLString,
+        },
+      },
+      resolve(parent, args) {
+        const updateStaff = Staff.findByIdAndUpdate(
+          args.id,
+          {
+            firstName: args.firstName,
+            lastName: args.lastName,
+            surname: args.surname,
+            qualification: args.qualification,
+            gender: args.gender,
+            maritalStatus: args.maritalStatus,
+            dob: args.dob,
+            yearAdmitted: args.yearAdmitted,
+            role: args.role,
+            stateOfOrigin: args.stateOfOrigin,
+            localGvt: args.localGvt,
+            homeTown: args.homeTown,
+            residence: args.residence,
+            phone: args.phone,
+            email: args.email,
+          },
+          {
+            new: true,
+          }
+        );
+
+        return updateStaff;
+      },
+    },
+
+    // Delete Staff
+
+    deleteStaff: {
+      type: StaffType,
+      args: {
+        id: {
+          type: new GraphQLNonNull(GraphQLID),
+        },
+      },
+      resolve(parent, args) {
+        const deleteStaff = Staff.findByIdAndRemove(args.id);
+        return deleteStaff;
+      },
+    },
     // Add Students
     addStudent: {
       type: StudentType,
@@ -411,7 +514,7 @@ const mutation = new GraphQLObjectType({
       type: StudentType,
       args: {
         id: {
-          type: new GraphQLNonNull(GraphQLID)
+          type: new GraphQLNonNull(GraphQLID),
         },
         firstName: {
           type: GraphQLString,
