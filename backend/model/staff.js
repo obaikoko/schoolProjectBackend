@@ -16,7 +16,7 @@ const StaffSchema = mongoose.Schema({
   gender: {
     type: String,
   },
-  maritalStaus: {
+  maritalStatus: {
     type: String,
   },
   dob: {
