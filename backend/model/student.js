@@ -48,6 +48,10 @@ const StudentSchema = mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Sponsor',
     },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
   },
   {
     timestamps: true,

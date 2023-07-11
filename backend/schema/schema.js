@@ -12,6 +12,8 @@ const Staff = require('../model/staff');
 const Sponsor = require('../model/sponsor');
 const User = require('../model/user');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const { protect } = require('../config/authMiddleware');
 
 const SponsorType = new GraphQLObjectType({
   name: 'Sponsor',
@@ -71,6 +73,9 @@ const UserType = new GraphQLObjectType({
       type: GraphQLString,
     },
     password: {
+      type: GraphQLString,
+    },
+    token: {
       type: GraphQLString,
     },
   }),
@@ -208,13 +213,35 @@ const mutation = new GraphQLObjectType({
         },
       },
       resolve: async (parent, args) => {
-        const userExist = User.find({ email: args.email });
+        
+        const userExist = await User.findOne({ email: args.email });
         if (userExist) {
-          return 'User already Exist';
+          throw new Error('User already exist');
         }
+        
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+
+        function isValidEmail(email) {
+          return emailRegex.test(email);
+        }
+
+        function isStrongPassword(password) {
+          return passwordRegex.test(password);
+        }
+
+
+         if (!isValidEmail(args.email)) {
+           throw new Error('Invalid email address');
+         }
+
+         if (!isStrongPassword(args.password)) {
+           throw new Error('Weak password');
+         }
         const salt = await bcrypt.genSalt(10);
         const hashPassword = await bcrypt.hash(args.password, salt);
-        const user = User.create({
+        const user = await User.create({
           firstName: args.firstName,
           lastName: args.lastName,
           surname: args.surname,
@@ -224,7 +251,14 @@ const mutation = new GraphQLObjectType({
           email: args.email,
           password: hashPassword,
         });
-        return user;
+        return {
+          surname: user.surname,
+          firstName: user.firstNameame,
+          lastName: user.lastName,
+          email: user.email,
+          password: user.password,
+          token: generateToken(user._id),
+        };
       },
     },
 
@@ -251,9 +285,14 @@ const mutation = new GraphQLObjectType({
         if (!isPasswordValid) {
           throw new Error('Invalid email or password');
         }
-        return user;
+        return {
+          firstName: user.firstName,
+          email: user.email,
+          token: generateToken(user._id),
+        };
       },
     },
+
     // Add Staff
     addStaff: {
       type: StaffType,
@@ -685,7 +724,7 @@ const mutation = new GraphQLObjectType({
 const RootQuery = new GraphQLObjectType({
   name: 'RootQueryType',
   fields: {
-    // Get all Students
+    //     // Get all Students
     students: {
       type: new GraphQLList(StudentType),
       args: {
@@ -699,7 +738,7 @@ const RootQuery = new GraphQLObjectType({
       },
     },
 
-    // Get specific Student
+    //     // Get specific Student
     studentDetails: {
       type: StudentType,
       args: {
@@ -713,6 +752,7 @@ const RootQuery = new GraphQLObjectType({
       },
     },
 
+    // Get sponsors
     Sponsors: {
       type: new GraphQLList(SponsorType),
       args: {
@@ -726,7 +766,7 @@ const RootQuery = new GraphQLObjectType({
       },
     },
 
-    // Get all Teachers
+    //     // Get all Teachers
     staff: {
       type: new GraphQLList(StaffType),
       args: {
@@ -740,7 +780,7 @@ const RootQuery = new GraphQLObjectType({
       },
     },
 
-    // Get a Staff
+    //     // Get a Staff
     staffDetail: {
       type: StaffType,
       args: {
@@ -754,7 +794,7 @@ const RootQuery = new GraphQLObjectType({
       },
     },
 
-    // Get All Users
+    //     // Get All Users
     users: {
       type: GraphQLList(UserType),
       args: {
@@ -767,7 +807,8 @@ const RootQuery = new GraphQLObjectType({
         return users;
       },
     },
-    // Get Specific User
+
+    //     // Get Specific User
     user: {
       type: UserType,
       args: {
@@ -782,6 +823,12 @@ const RootQuery = new GraphQLObjectType({
     },
   },
 });
+
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: '30d',
+  });
+};
 
 module.exports = new GraphQLSchema({
   query: RootQuery,
