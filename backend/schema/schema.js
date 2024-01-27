@@ -11,9 +11,8 @@ const Student = require('../model/student');
 const Staff = require('../model/staff');
 const Sponsor = require('../model/sponsor');
 const User = require('../model/user');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { protect } = require('../config/authMiddleware');
 
 const SponsorType = new GraphQLObjectType({
   name: 'Sponsor',
@@ -67,6 +66,9 @@ const UserType = new GraphQLObjectType({
       type: GraphQLString,
     },
     phone: {
+      type: GraphQLString,
+    },
+    role: {
       type: GraphQLString,
     },
     email: {
@@ -205,6 +207,19 @@ const mutation = new GraphQLObjectType({
         phone: {
           type: GraphQLString,
         },
+        role: {
+          type: new GraphQLEnumType({
+            name: 'UserRoleType',
+            values: {
+              Admin: {
+                value: 'Admin',
+              },
+              User: {
+                value: 'User',
+              },
+            },
+          }),
+        },
         email: {
           type: GraphQLString,
         },
@@ -213,12 +228,11 @@ const mutation = new GraphQLObjectType({
         },
       },
       resolve: async (parent, args) => {
-        
         const userExist = await User.findOne({ email: args.email });
         if (userExist) {
           throw new Error('User already exist');
         }
-        
+
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
         const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
@@ -231,14 +245,13 @@ const mutation = new GraphQLObjectType({
           return passwordRegex.test(password);
         }
 
+        if (!isValidEmail(args.email)) {
+          throw new Error('Invalid email address');
+        }
 
-         if (!isValidEmail(args.email)) {
-           throw new Error('Invalid email address');
-         }
-
-         if (!isStrongPassword(args.password)) {
-           throw new Error('Weak password');
-         }
+        if (!isStrongPassword(args.password)) {
+          throw new Error('Weak password');
+        }
         const salt = await bcrypt.genSalt(10);
         const hashPassword = await bcrypt.hash(args.password, salt);
         const user = await User.create({
@@ -248,6 +261,7 @@ const mutation = new GraphQLObjectType({
           stateOfOrigin: args.stateOfOrigin,
           localGvt: args.localGvt,
           phone: args.phone,
+          role: args.role,
           email: args.email,
           password: hashPassword,
         });
@@ -256,6 +270,7 @@ const mutation = new GraphQLObjectType({
           firstName: user.firstNameame,
           lastName: user.lastName,
           email: user.email,
+          role: user.role,
           password: user.password,
           token: generateToken(user._id),
         };
@@ -288,8 +303,90 @@ const mutation = new GraphQLObjectType({
         return {
           firstName: user.firstName,
           email: user.email,
+          role: user.role,
           token: generateToken(user._id),
         };
+      },
+    },
+
+    
+    updateUser: {
+      type: UserType,
+     args: {
+      id: {
+        type: new GraphQLNonNull(GraphQLID)
+      },
+        firstName: {
+          type: GraphQLString,
+        },
+        lastName: {
+          type: GraphQLString,
+        },
+        surname: {
+          type: GraphQLString,
+        },
+        stateOfOrigin: {
+          type: GraphQLString,
+        },
+        localGvt: {
+          type: GraphQLString,
+        },
+        phone: {
+          type: GraphQLString,
+        },
+        role: {
+          type: new GraphQLEnumType({
+            name: 'UserRoleTypeUpdate',
+            values: {
+              Admin: {
+                value: 'Admin',
+              },
+              User: {
+                value: 'User',
+              },
+            },
+          }),
+        },
+        email: {
+          type: GraphQLString,
+        },
+        password: {
+          type: GraphQLString,
+        },
+      },
+      resolve: async (parent, args) => {
+        // check if UserExist
+         const userExist = await User.findById(args.id);
+         if (!userExist) {
+          throw new Error('User does not exist')
+         }
+         const user = await User.findByIdAndUpdate(args.id, {
+           firstName: args.firstName,
+           lastName: args.lastName,
+           surname: args.surname,
+           stateOfOrigin: args.stateOfOrigin,
+           localGvt: args.localGvt,
+           phone: args.phone,
+           role: args.role,
+           email: args.email,
+         }, {new: true});
+         return{
+          user
+         }
+      }
+    },
+
+    // Delete User Account
+    deleteUser: {
+      type: UserType,
+      args: {
+        id: {
+          type: new GraphQLNonNull(GraphQLID),
+        },
+      },
+      resolve: async (parent, args) => {
+        const user = await User.findByIdAndRemove(args.id);
+        return user ;
       },
     },
 
@@ -797,11 +894,6 @@ const RootQuery = new GraphQLObjectType({
     //     // Get All Users
     users: {
       type: GraphQLList(UserType),
-      args: {
-        id: {
-          type: GraphQLID,
-        },
-      },
       resolve(parent, args) {
         const users = User.find();
         return users;

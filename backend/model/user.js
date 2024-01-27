@@ -20,6 +20,10 @@ const UserSchema = mongoose.Schema(
     phone: {
       type: String,
     },
+    role: {
+      type: String,
+      enum: ['Admin', 'User']
+    },
     email: {
       type: String,
       unique: true,
