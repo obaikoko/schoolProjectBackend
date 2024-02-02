@@ -7,13 +7,36 @@ const {
   GraphQLList,
   GraphQLEnumType,
 } = require('graphql');
+const User = require('../model/user');
 const Student = require('../model/student');
 const Staff = require('../model/staff');
 const Sponsor = require('../model/sponsor');
-const User = require('../model/user');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+// User Type
+const UserType = new GraphQLObjectType({
+  name: 'User',
+  fields: () => ({
+    name: {
+      type: GraphQLString,
+    },
+    email: {
+      type: GraphQLString,
+    },
+    password: {
+      type: GraphQLString,
+    },
+    role: {
+      type: GraphQLString,
+    },
+    id: {
+      type: GraphQLID,
+    },
+  }),
+});
+
+// Sponsor Type
 const SponsorType = new GraphQLObjectType({
   name: 'Sponsor',
   fields: () => ({
@@ -44,44 +67,7 @@ const SponsorType = new GraphQLObjectType({
   }),
 });
 
-const UserType = new GraphQLObjectType({
-  name: 'User',
-  fields: () => ({
-    id: {
-      type: GraphQLID,
-    },
-    firstName: {
-      type: GraphQLString,
-    },
-    lastName: {
-      type: GraphQLString,
-    },
-    surname: {
-      type: GraphQLString,
-    },
-    stateOfOrigin: {
-      type: GraphQLString,
-    },
-    localGvt: {
-      type: GraphQLString,
-    },
-    phone: {
-      type: GraphQLString,
-    },
-    role: {
-      type: GraphQLString,
-    },
-    email: {
-      type: GraphQLString,
-    },
-    password: {
-      type: GraphQLString,
-    },
-    token: {
-      type: GraphQLString,
-    },
-  }),
-});
+// Staff type
 const StaffType = new GraphQLObjectType({
   name: 'Staff',
   fields: () => ({
@@ -135,7 +121,7 @@ const StaffType = new GraphQLObjectType({
     },
   }),
 });
-
+// Student Type
 const StudentType = new GraphQLObjectType({
   name: 'Student',
   fields: () => ({
@@ -185,40 +171,14 @@ const StudentType = new GraphQLObjectType({
 const mutation = new GraphQLObjectType({
   name: 'Mutation',
   fields: {
-    // Add User
+    // User Mutations
+
+    // Register New User
     addUser: {
       type: UserType,
       args: {
-        firstName: {
+        name: {
           type: GraphQLString,
-        },
-        lastName: {
-          type: GraphQLString,
-        },
-        surname: {
-          type: GraphQLString,
-        },
-        stateOfOrigin: {
-          type: GraphQLString,
-        },
-        localGvt: {
-          type: GraphQLString,
-        },
-        phone: {
-          type: GraphQLString,
-        },
-        role: {
-          type: new GraphQLEnumType({
-            name: 'UserRoleType',
-            values: {
-              Admin: {
-                value: 'Admin',
-              },
-              User: {
-                value: 'User',
-              },
-            },
-          }),
         },
         email: {
           type: GraphQLString,
@@ -226,54 +186,34 @@ const mutation = new GraphQLObjectType({
         password: {
           type: GraphQLString,
         },
+        role: {
+          type: new GraphQLEnumType({
+            name: 'UserRoleType',
+            values: {
+              Admin: { value: 'Admin' },
+              Agent: { value: 'Agent' },
+            },
+          }),
+        },
       },
       resolve: async (parent, args) => {
         const userExist = await User.findOne({ email: args.email });
+        // Checks if a user already exist
         if (userExist) {
           throw new Error('User already exist');
         }
+        // Hash password
 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
-
-        function isValidEmail(email) {
-          return emailRegex.test(email);
-        }
-
-        function isStrongPassword(password) {
-          return passwordRegex.test(password);
-        }
-
-        if (!isValidEmail(args.email)) {
-          throw new Error('Invalid email address');
-        }
-
-        if (!isStrongPassword(args.password)) {
-          throw new Error('Weak password');
-        }
         const salt = await bcrypt.genSalt(10);
-        const hashPassword = await bcrypt.hash(args.password, salt);
+        const hashedPassword = await bcrypt.hash(args.password, salt);
         const user = await User.create({
-          firstName: args.firstName,
-          lastName: args.lastName,
-          surname: args.surname,
-          stateOfOrigin: args.stateOfOrigin,
-          localGvt: args.localGvt,
-          phone: args.phone,
-          role: args.role,
+          name: args.name,
           email: args.email,
-          password: hashPassword,
+          password: hashedPassword,
+          role: args.role,
         });
-        return {
-          surname: user.surname,
-          firstName: user.firstNameame,
-          lastName: user.lastName,
-          email: user.email,
-          role: user.role,
-          password: user.password,
-          token: generateToken(user._id),
-        };
+
+        return user;
       },
     },
 
@@ -282,111 +222,28 @@ const mutation = new GraphQLObjectType({
       type: UserType,
       args: {
         email: {
-          type: GraphQLNonNull(GraphQLString),
+          type: GraphQLString,
         },
         password: {
-          type: GraphQLNonNull(GraphQLString),
+          type: GraphQLString,
         },
       },
       resolve: async (parent, args) => {
         const user = await User.findOne({ email: args.email });
         if (!user) {
-          throw new Error('User not found!');
+          throw new Error('User not found');
         }
-        const isPasswordValid = await bcrypt.compare(
-          args.password,
-          user.password
-        );
-        if (!isPasswordValid) {
-          throw new Error('Invalid email or password');
+
+        if (user && (await bcrypt.compare(args.password, user.password))) {
+          return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          };
+        } else {
+          throw new Error('Invalid credentials');
         }
-        return {
-          firstName: user.firstName,
-          email: user.email,
-          role: user.role,
-          token: generateToken(user._id),
-        };
-      },
-    },
-
-    
-    updateUser: {
-      type: UserType,
-     args: {
-      id: {
-        type: new GraphQLNonNull(GraphQLID)
-      },
-        firstName: {
-          type: GraphQLString,
-        },
-        lastName: {
-          type: GraphQLString,
-        },
-        surname: {
-          type: GraphQLString,
-        },
-        stateOfOrigin: {
-          type: GraphQLString,
-        },
-        localGvt: {
-          type: GraphQLString,
-        },
-        phone: {
-          type: GraphQLString,
-        },
-        role: {
-          type: new GraphQLEnumType({
-            name: 'UserRoleTypeUpdate',
-            values: {
-              Admin: {
-                value: 'Admin',
-              },
-              User: {
-                value: 'User',
-              },
-            },
-          }),
-        },
-        email: {
-          type: GraphQLString,
-        },
-        password: {
-          type: GraphQLString,
-        },
-      },
-      resolve: async (parent, args) => {
-        // check if UserExist
-         const userExist = await User.findById(args.id);
-         if (!userExist) {
-          throw new Error('User does not exist')
-         }
-         const user = await User.findByIdAndUpdate(args.id, {
-           firstName: args.firstName,
-           lastName: args.lastName,
-           surname: args.surname,
-           stateOfOrigin: args.stateOfOrigin,
-           localGvt: args.localGvt,
-           phone: args.phone,
-           role: args.role,
-           email: args.email,
-         }, {new: true});
-         return{
-          user
-         }
-      }
-    },
-
-    // Delete User Account
-    deleteUser: {
-      type: UserType,
-      args: {
-        id: {
-          type: new GraphQLNonNull(GraphQLID),
-        },
-      },
-      resolve: async (parent, args) => {
-        const user = await User.findByIdAndRemove(args.id);
-        return user ;
       },
     },
 
@@ -822,6 +679,26 @@ const RootQuery = new GraphQLObjectType({
   name: 'RootQueryType',
   fields: {
     //     // Get all Students
+    user: {
+      type: UserType,
+      args: {
+        id: {
+          type: new GraphQLNonNull(GraphQLID),
+        },
+      },
+      resolve: async (parent, args) => {
+        const user = await User.findById(args.id);
+        if (!user) {
+          throw new Error('User not found');
+        } else {
+          return {
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          };
+        }
+      },
+    },
     students: {
       type: new GraphQLList(StudentType),
       args: {
@@ -890,37 +767,8 @@ const RootQuery = new GraphQLObjectType({
         return staff;
       },
     },
-
-    //     // Get All Users
-    users: {
-      type: GraphQLList(UserType),
-      resolve(parent, args) {
-        const users = User.find();
-        return users;
-      },
-    },
-
-    //     // Get Specific User
-    user: {
-      type: UserType,
-      args: {
-        id: {
-          type: new GraphQLNonNull(GraphQLID),
-        },
-      },
-      resolve(parent, args) {
-        const user = User.findOne(args.id);
-        return user;
-      },
-    },
   },
 });
-
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '30d',
-  });
-};
 
 module.exports = new GraphQLSchema({
   query: RootQuery,
