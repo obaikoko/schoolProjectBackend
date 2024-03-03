@@ -6,7 +6,7 @@ const colors = require('colors');
 const cors = require('cors');
 const connectDB = require('./config/db');
 const schema = require('./schema/schema');
-const {protect} = require('./middleware/authMiddleware');
+const { protect } = require('./middleware/authMiddleware');
 const userRoute = require('./routes/userRoute');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
@@ -14,6 +14,7 @@ const app = express();
 connectDB();
 
 const corsOptions = {
+  // origin: 'http://localhost:3000',
   origin: 'https://school-project-frontend.vercel.app/',
   credentials: true,
 };
