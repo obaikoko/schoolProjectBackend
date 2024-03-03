@@ -1,3 +1,5 @@
+const protect = require('../middleware/authMiddleware');
+const asyncHanler = require('express-async-handler');
 const {
   GraphQLObjectType,
   GraphQLID,
@@ -13,6 +15,15 @@ const Staff = require('../model/staff');
 const Sponsor = require('../model/sponsor');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const generateToken = require('../utils/generateToken');
+
+// Logout User
+const LogoutUserType = new GraphQLObjectType({
+  name: 'LogoutUserType',
+  fields: {
+    message: { type: GraphQLString },
+  },
+});
 
 // User Type
 const UserType = new GraphQLObjectType({
@@ -196,56 +207,32 @@ const mutation = new GraphQLObjectType({
           }),
         },
       },
-      resolve: async (parent, args) => {
+      resolve: async (parent, args, context) => {
+        const { res } = context;
         const userExist = await User.findOne({ email: args.email });
         // Checks if a user already exist
         if (userExist) {
           throw new Error('User already exist');
         }
-        // Hash password
-
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(args.password, salt);
         const user = await User.create({
           name: args.name,
           email: args.email,
-          password: hashedPassword,
+          password: args.password,
           role: args.role,
         });
 
-        return user;
-      },
-    },
-
-    // Login User
-    loginUser: {
-      type: UserType,
-      args: {
-        email: {
-          type: GraphQLString,
-        },
-        password: {
-          type: GraphQLString,
-        },
-      },
-      resolve: async (parent, args) => {
-        const user = await User.findOne({ email: args.email });
-        if (!user) {
-          throw new Error('User not found');
-        }
-
-        if (user && (await bcrypt.compare(args.password, user.password))) {
+        if (user) {
+          generateToken(res, user._id);
           return {
-            id: user.id,
             name: user.name,
             email: user.email,
             role: user.role,
+            id: user._id,
           };
-        } else {
-          throw new Error('Invalid credentials');
         }
       },
     },
+
 
     // Add Staff
     addStaff: {
