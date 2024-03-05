@@ -9,8 +9,9 @@ const authUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
     res.status(400);
-    throw new Error('add email or password');
+    throw new Error('Add email or password');
   }
+
   const user = await User.findOne({ email });
   if (!user) {
     res.status(400);
@@ -23,7 +24,7 @@ const authUser = asyncHandler(async (req, res) => {
       _id: user._id,
       name: user.name,
       email: user.email,
-      role: user.role
+      role: user.role,
     });
   } else {
     res.status(400);
@@ -44,8 +45,7 @@ const logoutUser = asyncHandler(async (req, res) => {
   res.json({ message: 'Logged out user' });
 });
 
-
 module.exports = {
   authUser,
-  logoutUser
+  logoutUser,
 };
