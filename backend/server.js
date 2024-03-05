@@ -15,7 +15,7 @@ connectDB();
 
 const corsOptions = {
   // origin: 'http://localhost:3000',
-  origin: 'https://school-project-frontend.vercel.app/',
+  origin: 'https://school-project-frontend.vercel.app',
   credentials: true,
 };
 
