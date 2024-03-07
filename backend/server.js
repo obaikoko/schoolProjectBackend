@@ -27,7 +27,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use('/api/users', userRoute);
 app.use(
   '/graphql',
-  protect,
+  // protect,
   graphqlHTTP({
     schema,
     graphiql: process.env.NODE_ENV === 'development',

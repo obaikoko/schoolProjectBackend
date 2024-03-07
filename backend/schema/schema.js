@@ -29,7 +29,10 @@ const LogoutUserType = new GraphQLObjectType({
 const UserType = new GraphQLObjectType({
   name: 'User',
   fields: () => ({
-    name: {
+    firstName: {
+      type: GraphQLString,
+    },
+    lastName: {
       type: GraphQLString,
     },
     email: {
@@ -188,7 +191,10 @@ const mutation = new GraphQLObjectType({
     addUser: {
       type: UserType,
       args: {
-        name: {
+        firstName: {
+          type: GraphQLString,
+        },
+        lastName: {
           type: GraphQLString,
         },
         email: {
@@ -215,16 +221,17 @@ const mutation = new GraphQLObjectType({
           throw new Error('User already exist');
         }
         const user = await User.create({
-          name: args.name,
+          firstName: args.firstName,
+          lastName: args.lastName,
           email: args.email,
           password: args.password,
           role: args.role,
         });
 
         if (user) {
-          generateToken(res, user._id);
           return {
-            name: user.name,
+            firstName: user.firstName,
+            lastName: user.lastName,
             email: user.email,
             role: user.role,
             id: user._id,
@@ -679,7 +686,8 @@ const RootQuery = new GraphQLObjectType({
           throw new Error('User not found');
         } else {
           return {
-            name: user.name,
+            firstName: user.firstName,
+            lastName: user.lastName,
             email: user.email,
             role: user.role,
           };
